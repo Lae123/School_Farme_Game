@@ -1,4 +1,4 @@
--- Laeticia Hadi 
+
 ---
 
 # Farming World
