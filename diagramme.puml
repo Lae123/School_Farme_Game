@@ -1,0 +1,750 @@
+@startuml diagramme
+allowmixing
+
+package Control{
+    class GameController {
+        - player: Joueur
+        - gameMap: MapG
+        - partie: Partie
+        - animalMovementTimer: Timer
+        + GameController(partie: Partie, gameMap: MapG)
+        + getPartie(): Partie
+        + getMap(): MapG
+        + movePlayer(newPos: Coordinates): boolean
+        + getPlayer(): Joueur
+        + update(delta: double): void
+        + getGameMap(): MapG
+        + moveAnimals(): void
+        + addKeyListenerToPanel(panel: JPanel): void
+        + addMouseListenerToPanel(panel: JPanel): void
+        + handleRightClick(clickedPos: Coordinates): void
+        + handleLeftClick(clickedPos: Coordinates, panel: JPanel): void
+        + handleCaseActions(clickedPos: Coordinates): void
+        + handleMachineAtCase(place: Case): void
+        + updatePlayerDirection(targetPos: Coordinates): void
+        + movePlayerStepByStep(targetPos: Coordinates): void
+    }
+}
+
+package geometry {
+    class Coordinates {
+        - x: double
+        - y: double
+        + Coordinates(x: double, y: double)
+        + x(): double
+        + y(): double
+        + interpolate(target: Coordinates, progress: double): Coordinates
+        + add(other: Coordinates): Coordinates
+        + equals(obj: Object): boolean
+        + hashCode(): int
+        + toString(): String
+    }
+}
+
+package GUI.Inv {
+    class ButtonEditor {
+        - button: JButton
+        - label: String
+        - isPushed: boolean
+        - onClick: Consumer<Integer>
+        + ButtonEditor(checkBox: JCheckBox, onClick: Consumer<Integer>)
+        + getTableCellEditorComponent(table: JTable, value: Object, isSelected: boolean, row: int, column: int): Component
+        + getCellEditorValue(): Object
+    }
+
+    class ButtonRenderer {
+        + getTableCellRendererComponent(table: JTable, value: Object, isSelected: boolean, hasFocus: boolean, row: int, column: int): Component
+    }
+
+    interface InventaireS {
+        + initScreen(): void
+        + updateDisplay(): void
+    }
+
+    class InventaireRecolteuse {
+        - Recolteuse recolteuse
+        - Joueur player
+        - JTable inventaireTable
+        + InventaireRecolteuse(Recolteuse, Joueur)
+        + initScreen(): void
+        + updateDisplay(): void
+        - createStockPanel(): JPanel
+        - createActionPanel(buttonText: String, action: ActionListener): JPanel
+        - styleButton(button: JButton): void
+        - startRefreshTimer(): void
+    }
+
+    class InventaireUsine {
+        - Usine usine
+        - Joueur player
+        - JTable stockTable
+        - JTable recetteTable
+        - JTable recettesDisponiblesTable
+        - Recette recetteActuelle
+        - Map<TypeRessource, Integer> stockMarche
+        + InventaireUsine(Usine, Joueur)
+        + initScreen(): void
+        + updateDisplay(): void
+        - initMarcheStock(): Map<TypeRessource, Integer>
+        - createRecettesDisponiblesPanel(): JPanel
+        - updateRecettesDisponiblesDisplay(): void
+        - createStockPanel(): JPanel
+        - updateStockDisplay(): void
+        - createRecettePanel(): JPanel
+        - updateRecetteIngredientsDisplay(): void
+        - addIngredientsToUsine(): void
+        - createActionPanel(): JPanel
+        - canCraft(): boolean
+        - craft(): void
+        - startRefreshTimer(): void
+        - styleButton(button: JButton): void
+    }
+
+    class InventaireJoueur {
+        - player: Joueur
+        - recettesTable: JTable
+        - inventaireTable: JTable
+        - recettesPanel: JPanel
+        - inventairePanel: JPanel
+        - craftedItemsTable: JTable
+        - craftedItemsPanel: JPanel
+        + InventaireJoueur(player: Joueur)
+        + initScreen(): void
+        + createRecettesPanel(): JPanel
+        + createInventairePanel(): JPanel
+        + createCraftedItemsPanel(): JPanel
+        + handleCraftButtonClick(rowIndex: int): void
+        + updateCraftedItemsDisplay(craftedItemName: String): void
+        + updateInventaireDisplay(): void
+    }
+
+    ButtonEditor --> ButtonRenderer : Uses
+    InventaireJoueur --> ButtonEditor : Uses
+    InventaireJoueur --> ButtonRenderer : Uses
+}
+
+package GUI.Reglage {
+    class RecolteuseReglage {
+        - Recolteuse recolteuse
+        - JList<String> ressourcesList
+        - DefaultListModel<String> listModel
+        - MapG map
+        + RecolteuseReglage(Recolteuse, MapG)
+        + initScreen(): void
+    }
+}
+
+package GUI {
+    class GameWindow {
+        - final int BUTTON_WIDTH = 200
+        - final int BUTTON_HEIGHT = 50
+        - final int MARGIN_LEFT = 20
+        - final int MARGIN_TOP = 100
+        - final int BORDER_SIZE = 50
+        - static BufferedImage buttonSaveImg
+        - static BufferedImage buttonSaveHoverImg
+        - static BufferedImage buttonSavePressedImg
+        - static BufferedImage buttonQuitImg
+        - static BufferedImage buttonQuitHoverImg
+        - static BufferedImage buttonQuitPressedImg
+        - static BufferedImage buttonopttImg
+        - static BufferedImage buttonoptHoverImg
+        + GameWindow(title: String, mapDisplay: MapDisplay)
+        - setupWindow(mapDisplay: MapDisplay): void
+        - createButton(text: String, actionListener: ActionListener, defaultImage: BufferedImage, hoverImage: BufferedImage, pressedImage: BufferedImage): JButton
+        - createMainPanel(mapDisplay: MapDisplay): JPanel
+        - createGameButton(buttonText: String, actionListener: ActionListener, buttonImage: BufferedImage, buttonPress: BufferedImage): JButton
+        - finalizeWindowSetup(panel: JPanel, mapDisplay: MapDisplay): void
+    }
+
+    class MapDisplay {
+        - int tileSize = 50
+        - GameController gameController
+        - BufferedImage[] emptyTileImages
+        - BufferedImage[][] cachedEmptyImages
+        + MapDisplay(gameController: GameController)
+        + getPreferredSize(): Dimension
+        - paintComponent(g: Graphics): void
+        - drawMap(g: Graphics): void
+        - drawFactories(g: Graphics): void
+        - drawPlayer(g: Graphics): void
+        - drawAnimals(g: Graphics): void
+        + getGameController(): GameController
+    }
+    class ShopScreen {
+        - mainPanel: JPanel
+        - bottomPanel: JPanel
+        - player: Joueur
+        - partie: Partie
+        + ShopScreen(player: Joueur, partie: Partie)
+        - initUI(): void
+        - createBuyPanel(): JScrollPane
+        - createSellPanel(): JScrollPane
+        - updatePlayerInventory(): void
+        - addMachineItem(machinesPanel: JPanel, machine: Machine, price: int): void
+        - addRecetteItem(recettesPanel: JPanel, recette: Recette): void
+        - addSellResourceItem(sellPanel: JPanel, resourceName: String, resourceType: TypeRessource, sellPrice: int): void
+        - addSellItem(itemsPanel: JPanel, resourceName: String, resourceType: TypeRessource, availableQuantity: int, sellPrice: int): void
+    }
+
+    class VolumeSettingsPanel {
+        - panel: JPanel
+        - musicLabel: JLabel
+        - musicSlider: JSlider
+        - effectsLabel: JLabel
+        - effectsSlider: JSlider
+        - masterLabel: JLabel
+        - masterSlider: JSlider
+        + VolumeSettingsPanel()
+    }
+}
+
+    package Helper {
+        class Animation {
+            - framesData: List<byte[]>
+            - currentFrame: int
+            - lastTime: long
+            - delay: long
+            + Animation(delay: long, frames: List<BufferedImage>)
+            + update(): void
+            + getCurrentFrame(): BufferedImage
+            - toByteArray(image: BufferedImage): byte[]
+        }
+    }
+
+actor "Utilisateur" as User
+
+    rectangle "Menu Principal" {
+        User --> (Nouvelle Partie) : Cliquer sur "Nouvelle Partie"
+        User --> (Continuer) : Cliquer sur "Continuer"
+        User --> (Réglages) : Cliquer sur "Réglages"
+        User --> (Quitter) : Cliquer sur "Quitter"
+    }
+
+    rectangle "Réglages" {
+        User --> (Ajuster Volume Principal) : Cliquer pour ajuster volume
+        User --> (Ajuster Volume Effets Sonores) : Cliquer pour ajuster volume
+        User --> (Retour au Menu Principal) : Cliquer sur "Retour"
+    }
+
+    rectangle "Jeu" {
+        User --> (Jouer Nouvelle Partie) : Démarrer un nouveau jeu
+        User --> (Jouer Partie Sauvegardée) : Reprendre partie sauvegardée
+    }
+
+    (Nouvelle Partie) --> (Jouer Nouvelle Partie)
+    (Continuer) --> (Jouer Partie Sauvegardée)
+    (Réglages) --> (Ajuster Volume Principal)
+    (Réglages) --> (Ajuster Volume Effets Sonores)
+    (Jeu) --> (Jouer Nouvelle Partie)
+    (Jeu) --> (Jouer Partie Sauvegardée)
+
+
+GameController --> "1" Coordinates : Uses
+GameController --> "1" MapG : Contains
+GameController --> "1" Joueur : Manages
+GameController --> "1" Partie : Manages
+InventaireJoueur --> "1" Joueur : Manages
+RecolteuseReglage --> "1" Recolteuse : Configures
+InventaireRecolteuse --> "1" Recolteuse : Uses
+InventaireRecolteuse --> "1" Joueur : Manages
+InventaireUsine --> "1" Usine : Uses
+InventaireUsine --> "1" Joueur : Manages
+InventaireUsine --> "1" Recette : Manages
+InventaireUsine --> "1" Map : Contains
+InventaireUsine --> "1" TypeRessource : Uses
+ShopScreen --> "1" Partie : Manages
+ShopScreen --> "1" Joueur : Manages
+
+
+
+package "Model" {
+
+    enum TypeRessource {
+        BOIS
+        PIERRE
+        FER
+        OR
+        NONE
+    }
+
+    class Ressources {
+        - type: TypeRessource
+        - quantite: int
+        - dernierRechargeTime: long
+        - DELAI_RECHARGEMENT: final int
+        + Ressources()
+        + Ressources(type: TypeRessource, quantite: int)
+        + getType(): TypeRessource
+        + setType(type: TypeRessource): void
+        + getQuantite(): int
+        + setQuantite(quantite: int): void
+        + ajouterQuantite(quantite: int): void
+        + retirerQuantite(quantite: int): int
+        + estVide(): boolean
+        + rechargerRessource(): void
+        + genererNouvelleQuantite(): int
+        + estPrêteARecolter(): boolean
+        + toString(): String
+    }
+
+    class Recette {
+        - nom: String
+        - ingredients: Map<TypeRessource, Integer>
+        - produit: TypeRessource
+        - quantiteProduit: int
+        - duree: int
+        - prix: int
+        + Recette(nom: String, ingredients: Map<TypeRessource, Integer>, produit: TypeRessource, quantiteProduit: int, duree: int, prix: int)
+        + getPrix(): int
+        + getNom(): String
+        + getIngredients(): Map<TypeRessource, Integer>
+        + getProduit(): TypeRessource
+        + getQuantiteProduit(): int
+        + getDuree(): int
+        + estInstantanee(): boolean
+        + ingredientsDisponibles(inventaire: Map<TypeRessource, Integer>): boolean
+        + consommerIngredients(inventaire: Map<TypeRessource, Integer>): void
+        + toString(): String
+    }
+
+    class Partie {
+        - carte: MapG
+        - joueur: Joueur
+        - gc: GameController
+        - livreDeRecette: LivreDeRecette
+        - shopScreen: ShopScreen
+        - animals: List<Animal>
+        - scanner: Scanner
+        + Partie()
+        + getShopScreen(): ShopScreen
+        + setShopScreen(shopScreen: ShopScreen): void
+        + getCarte(): MapG
+        + getGc(): GameController
+        + getJoueur(): Joueur
+        + getLivreDeRecette(): LivreDeRecette
+        + getAnimals(): List<Animal>
+        + createMap(): void
+        + update(delta: double): void
+        + creerLivreDeRecette(): void
+        + createRandomAnimals(numberOfAnimals: int): List<Animal>
+        + creerJoueur(): void
+    }
+
+    class Monnaie {
+        - valeur: int
+        + Monnaie(valeur: int)
+        + getValeur(): int
+        + ajouter(montant: int): void
+        + retirer(montant: int): void
+        + toString(): String
+    }
+
+    class MapG {
+        - rand: Random
+        - map: Case[][]
+        - largeur: int
+        - hauteur: int
+        - startC: Coordinates
+        - marketC: Coordinates
+        - nbRessources: int
+
+        + MapG()
+        - remplirMap(): void
+        - placerCaseStart(): void
+        - placerCaseMarche(): void
+        - placerRessources(nbRessources: int): void
+        - verifierAccessibilite(): boolean
+        + estAdjacenteARessource(position: Coordinates): boolean
+        + isValidMove(newPos: Coordinates): boolean
+        + getCaseAt(position: Coordinates): Case
+        + setCaseAt(pos: Coordinates, a: Case): void
+        + affichageTerminal(): void
+        + getStartC(): Coordinates
+        + getRessourcesAdjacentes(position: Coordinates): List<Ressources>
+        + findPath(start: Coordinates, end: Coordinates): List<Coordinates>
+        + getHauteur(): int
+        + getLargeur(): int
+        + getMap(): Case[][]
+    }
+
+    class Machine {
+        - Coordinates position
+        - Inventaire inventaire
+        - int stockActuel
+        - boolean active
+        - transient ScheduledExecutorService scheduler
+        + Machine(Coordinates position, int stockMax)
+        + getPosition() : Coordinates
+        + setPosition(Coordinates position)
+        + getInventaire() : Inventaire
+        + getStockActuel() : int
+        + setStockActuel(int stockActuel)
+        + isActive() : boolean
+        + setActive(boolean active)
+        + equals(Object obj) : boolean
+        + hashCode() : int
+        + transfererRessourcesVersJoueur(Inventaire inventaireJoueur)
+        + reglage(MapG map)
+        + startPeriodicHarvest(MapG map)
+        - stopPeriodicAction()
+        + close()
+    }
+
+
+    class LivreDeRecette {
+        - List<Recette> recettes
+        + LivreDeRecette()
+        + ajouterRecette(Recette recette)
+        + getRecettesDisponibles() : List<Recette>
+        + getRecetteByName(String nomRecette) : Recette
+        + filtrerRecettesParIngredients(Map<TypeRessource, Integer> inventaire) : List<Recette>
+        + get(int index) : Recette
+        + afficherRecettes()
+    }
+
+    class Joueur {
+        - String nom
+        - Coordinates pos
+        - Ressources recolte
+        - Monnaie argent
+        - Inventaire inv
+        - String direction
+        - double posX, posY
+        - Map<String, Animation> animations
+        - LivreDeRecette livreDeRecette
+        - ComportementJoueur cpJoueur
+        - List<Machine> machines
+        - boolean enMouvement
+        + Joueur(String nom, Coordinates positionInitiale, Map<String, Animation> animations)
+        + Joueur()
+        + String getNom()
+        + void setNom(String nom)
+        + Coordinates getPos()
+        + void setPos(Coordinates pos)
+        + Ressources getRecolte()
+        + void setRecolte(Ressources recolte)
+        + Monnaie getArgent()
+        + void setArgent(Monnaie argent)
+        + Inventaire getInv()
+        + void setInv(Inventaire inv)
+        + String getDirection()
+        + void setDirection(String direction)
+        + List<Machine> getMachines()
+        + ComportementJoueur getCpJoueur()
+        + void ajouterMachine(Machine machine)
+        + boolean possedeMachine(Machine machine)
+        + void setPixelPos(Coordinates pos, double posX, double posY)
+        + void setPos(double x, double y)
+        + void setMouvement(boolean mv)
+        + void setGridPos(Coordinates gridPos)
+        + void setAnimations(Map<String, Animation> animations)
+        + void afficherRecettes()
+        + String toString()
+    }
+
+    class Inventaire {
+        - Map<TypeRessource, Ressources> contenu
+        - int capaciteMax
+        + Inventaire(int capaciteMax)
+        + Map<TypeRessource, Ressources> getContenu()
+        + int getQuantiteRessource(TypeRessource type)
+        + int getStock()
+        + boolean addRessource(TypeRessource type, int quantite)
+        + void removeRessource(TypeRessource type, int quantite)
+        + boolean ajouterRessource(Ressources ressource, int quantite)
+        + void retirerRessource(Ressources ressource, int quantite)
+        + void retirerRessource(TypeRessource type, int quantite)
+        + void afficherContenu()
+        + boolean estVide()
+        + int getCapaciteMax()
+        + boolean hasSufficientIngredients(Recette recette)
+        + void craft(Recette recette)
+        + void setCapaciteMax(int capaciteMax)
+    }
+
+    class ComportementJoueur {
+        - Joueur player
+        - static final long TEMPS_RECOLTE_LABORIEUSE
+        + ComportementJoueur(Joueur j)
+        + void deplacer(Coordinates pos)
+        + void ajouterRessource(Ressources ressource, int quantite)
+        + void retirerArgent(int montant)
+        + void ajouterArgent(int montant)
+        + boolean transfererRessourcesVersUsine(Usine usine, Recette recette)
+        + void afficherMachines()
+        + boolean placerMachine(Machine machine, Coordinates position, MapG carte)
+        + void checkIfOnMarket(MapG map, Partie partie)
+        + void recolteLaboriuse(Coordinates positionCible, MapG carte)
+        + void recolteTemporisee(Coordinates positionCible, MapG carte)
+        + boolean peutRecolter(Coordinates positionCible, MapG carte)
+    }
+
+
+    interface Actionnable {
+        + void deplacer(Coordinates pos)
+        + void ajouterRessource(Ressources ressource, int quantite)
+        + void retirerArgent(int montant)
+        + void ajouterArgent(int montant)
+        + boolean placerMachine(Machine machine, Coordinates position, MapG carte)
+        + boolean transfererRessourcesVersUsine(Usine usine, Recette recette)
+        + void recolteLaboriuse(Coordinates positionCible, MapG carte)
+        + void checkIfOnMarket(MapG map, Partie partie)
+        + void recolteTemporisee(Coordinates positionCible, MapG carte)
+    }
+
+    enum CaseType {
+        VIDE
+        DEMARRAGE
+        MARCHE
+        RESSOURCE
+        MACHINE
+    }
+
+    class Case {
+        - CaseType type
+        - Ressources ressource
+        - Machine machine
+        - int clics
+        + Case(CaseType type)
+        + getType() : CaseType
+        + setType(CaseType type)
+        + getRessource() : Ressources
+        + setRessource(Ressources ressource)
+        + getMachine() : Machine
+        + setMachine(Machine machine)
+        + incrementClics()
+        + getClics() : int
+        + resetClics()
+        + reset()
+        + toString() : String
+    }
+
+    ' Classe Animal
+    class Animal {
+        - int x
+        - int y
+        - int speed
+        - int directionX
+        - int directionY
+        - int width
+        - int height
+        - Map<String, Animation> animations
+        - Animation currentAnimation
+        - Coordinates targetPos
+        - double stepProgress
+        + Animal(int x, int y, int width, int height, int speed, Animation initialAnimation)
+        + setAnimations(Map<String, Animation> animations)
+        + getX() : int
+        + getY() : int
+        + getCurrentAnimation() : Animation
+        + moveStepByStep(Coordinates newPos, int delay)
+        + randomMove(int mapWidth, int mapHeight)
+        + randomizeDirection()
+        + draw(Graphics g)
+        + setCurrentAnimation(String animationName)
+    }
+}
+
+package Model.GameStruct {
+
+    ' Classe Run
+    class Run {
+        + lancerPartie()
+        + main(String[] args)
+    }
+
+    ' Classe GameLoop
+    class GameLoop {
+        - boolean running
+        - int fps
+        - Partie partie
+        - GameController gameController
+        - MapDisplay mainGamePanel
+        + GameLoop()
+        + start()
+        - init()
+        - gameLoop()
+        - update(double delta)
+        - stop()
+        - shouldStop() : boolean
+        + getMainGamePanel() : MapDisplay
+    }
+}
+
+
+package Model.Machines {
+    class Usine {
+        - Recette recetteActuelle
+        - List<Recette> recettesDisponibles
+        + Usine(Coordinates position, int stockMax)
+        + setRecettesDisponibles(List<Recette> recettesDisponibles)
+        + setRecetteActuelle(Recette recetteActuelle)
+        + getRecetteActuelle() : Recette
+        + getStockProduits() : Map<TypeRessource, Ressources>
+        + reglage(MapG map)
+        + actionPeriodique(MapG map)
+        - checkIngredientsDisponibles(Map<TypeRessource, Ressources> inventaire) : boolean
+        - produire(Map<TypeRessource, Ressources> inventaire)
+    }
+
+    class Recolteuse {
+        - TypeRessource ressourceCible
+        - List<Ressources> inventaireRecolte
+        + Recolteuse(Coordinates position, int stockMax)
+        + reglage(MapG map)
+        + getRecolte() : List<Ressources>
+        + setRessourceCible(TypeRessource ressourceCible)
+        + actionPeriodique(MapG carte)
+    }
+}
+
+package model {
+    class Partie {
+        - joueurs: List<Joueur>
+        - mapG: MapG
+        - gameController: GameController
+        - timer: Timer
+        + Partie(joueurs: List<Joueur>, mapG: MapG)
+        + getJoueurs(): List<Joueur>
+        + getMapG(): MapG
+        + getGameController(): GameController
+        + startGame(): void
+        + endGame(): void
+        + isGameOver(): boolean
+    }
+
+    class Joueur {
+        - nom: String
+        - ressources: Map<TypeRessource, Integer>
+        - position: Coordinates
+        - points: int
+        + Joueur(nom: String, initialRessources: Map<TypeRessource, Integer>, position: Coordinates)
+        + getNom(): String
+        + getRessources(): Map<TypeRessource, Integer>
+        + getPosition(): Coordinates
+        + setPosition(position: Coordinates): void
+        + getPoints(): int
+        + addPoints(points: int): void
+        + collectResource(resource: TypeRessource, amount: int): void
+    }
+
+    class MapG {
+        - grid: List<List<Case>>
+        - size: int
+        + MapG(size: int)
+        + getGrid(): List<List<Case>>
+        + getCaseAtPosition(position: Coordinates): Case
+        + getSize(): int
+    }
+
+    class Case {
+        - type: CaseType
+        - position: Coordinates
+        + Case(type: CaseType, position: Coordinates)
+        + getType(): CaseType
+        + getPosition(): Coordinates
+    }
+
+    enum CaseType {
+        EMPTY
+        RESOURCE
+        MACHINE
+        FACTORY
+    }
+
+    class Animal {
+        - nom: String
+        - position: Coordinates
+        - type: AnimalType
+        + Animal(nom: String, position: Coordinates, type: AnimalType)
+        + getPosition(): Coordinates
+        + setPosition(position: Coordinates): void
+        + move(): void
+    }
+
+    enum AnimalType {
+        HERBIVORE
+        CARNIVORE
+    }
+
+    class Machine {
+        - nom: String
+        - resourcesNeeded: Map<TypeRessource, Integer>
+        - resourcesProduced: Map<TypeRessource, Integer>
+        + Machine(nom: String, resourcesNeeded: Map<TypeRessource, Integer>, resourcesProduced: Map<TypeRessource, Integer>)
+        + getResourcesNeeded(): Map<TypeRessource, Integer>
+        + getResourcesProduced(): Map<TypeRessource, Integer>
+        + operate(): void
+    }
+
+    class Recolteuse {
+        - nom: String
+        - areaOfEffect: int
+        + Recolteuse(nom: String, areaOfEffect: int)
+        + collectNearbyResources(mapG: MapG): List<TypeRessource>
+    }
+
+    class Usine {
+        - nom: String
+        - stock: Map<TypeRessource, Integer>
+        - recettes: List<Recette>
+        + Usine(nom: String, stock: Map<TypeRessource, Integer>, recettes: List<Recette>)
+        + addStock(resource: TypeRessource, quantity: int): void
+        + createProduct(recette: Recette): void
+    }
+
+    class Recette {
+        - nom: String
+        - ingredients: Map<TypeRessource, Integer>
+        - produit: TypeRessource
+        + Recette(nom: String, ingredients: Map<TypeRessource, Integer>, produit: TypeRessource)
+        + getIngredients(): Map<TypeRessource, Integer>
+        + getProduit(): TypeRessource
+    }
+
+    enum TypeRessource {
+        WOOD
+        STONE
+        IRON
+        FOOD
+    }
+
+    Partie --> "1..*" Joueur : Contains
+    Partie --> "1" MapG : Contains
+    Partie --> "1" GameController : Manages
+    Joueur --> "1..*" Ressource : Manages
+    Joueur --> "1" Coordinates : Has
+    Animal --> "1" Coordinates : Has
+    Animal --> "1" AnimalType : Defines
+    Machine --> "1..*" TypeRessource : Requires
+    Machine --> "1..*" TypeRessource : Produces
+    Recolteuse --> "1" MapG : Interacts
+    Usine --> "1..*" Recette : Uses
+    Usine --> "1..*" TypeRessource : Stores
+    Recette --> "1..*" TypeRessource : Contains
+}
+
+package model {
+    class Ressource {
+        - type: TypeRessource
+        - quantity: int
+        + Ressource(type: TypeRessource, quantity: int)
+        + getType(): TypeRessource
+        + getQuantity(): int
+        + addQuantity(amount: int): void
+        + removeQuantity(amount: int): void
+    }
+}
+
+Partie --> "1" MapG : Manages
+Joueur --> "1" Partie : BelongsTo
+Recolteuse --> "1" Joueur : UsedBy
+Machine --> "1" Usine : UsedIn
+Recette --> "1" Usine : Defines
+Animal --> "1" MapG : Occupies
+Joueur --> "1" Ressource : Manages
+
+
+
+@enduml
